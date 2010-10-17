@@ -1,57 +1,51 @@
 import levmar
-from math import sqrt, pow
+import scipy.optimize
+from numpy.testing import *
+import numpy
+import algopy
 
-def func(estimate, measurements, extra):
-    errors = []
-    #print 'est: %.4f %.4f %.4f %.4f' % estimate
-    for i in range(len(measurements)):
-        err = sqrt((estimate[0] - extra[i*4])**2 +
-                   (estimate[1] - extra[i*4+1])**2 +
-                   (estimate[2] - extra[i*4+2])**2)
-        err -= 0.299795458 * (extra[i*4+3] - estimate[3])
-        errors.append(float(err))
-    return errors
-
-def jacf(estimate, measurements, extra):
-    jac = []
-
-    for i in range(len(measurements)):
-        denom = pow((estimate[0] - extra[i*4])**2 +
-                    (estimate[1] - extra[i*4+1])**2 +
-                    (estimate[2] - extra[i*4+2])**2, -0.5)
-
-        du_dx1 = (estimate[0] - extra[i*4]) * denom
-        du_dx2 = (estimate[1] - extra[i*4+1]) * denom
-        du_dx3 = (estimate[2] - extra[i*4+2]) * denom
-        du_dx4 = 0.299795458
-        jac += [du_dx1, du_dx2, du_dx3, du_dx4]
-
-    return jac
+class TestOptimization(TestCase):
+    
+    def test_dder(self):
+        ## This is y-data:
+        y_data = numpy.array([0.2867, 0.1171, -0.0087, 0.1326, 0.2415, 0.2878, 0.3133, 0.3701, 0.3996, 0.3728, 0.3551, 0.3587, 0.1408, 0.0416, 0.0708, 0.1142, 0, 0, 0])
         
-def main():
-    for line in open('../levmar-2.1.3/sample.data'):
-        bits = line.split()
-        if len(bits) < 20:
-            break
-
-        initial = (0.0, 0.0, 0.0, 0.0)
-        measurement = (0.0, 0.0, 0.0, 0.0)
-        Ab = map(float, bits[:16])
+        ## This is t-data:
+        t = numpy.array([67., 88, 104, 127, 138, 160, 169, 188, 196, 215, 240, 247, 271, 278, 303, 305, 321, 337, 353])
+        
+        def fitfunc(p, t):
+            """This is the equation"""
+            return p[0] + (p[1] -p[0]) * ((1/(1+algopy.exp(-p[2]*(t-p[3])))) + (1/(1+algopy.exp(p[4]*(t-p[5])))) -1)
+           
+        def errfunc(p, t, y):
+            return fitfunc(p,t) -y
+            
+        guess = numpy.array([0, max(y_data), 0.1, 140, -0.1, 270])
+        p2, C, info, msg, success = scipy.optimize.leastsq(errfunc, guess, args=(t, y_data), full_output=1)
+    
+        p_guess = numpy.array([0, max(y_data), 0.1, 140, -0.1, 270])
+        # p3, iterations, run_info = levmar.leastsq(fitfunc, p_guess, y_data, args=t, Dfun = jac_fitfunc, full_output=1)
+        p3, iterations, run_info = levmar.leastsq(fitfunc, p_guess, y_data, args=t, full_output=1)
+        
+        
+        print p2
+        print p3
+        
+        print numpy.sum(errfunc(p2, t, y_data)**2)
+        print numpy.sum(errfunc(p3, t, y_data)**2)
+        # p2, C, info, msg, success = scipy.optimize(
+        
+            
         #iters, result = levmar.ddif(func, initial, measurement, 5000,
         #                            data = Ab)
-        result, iters, stats = levmar.dder(func, jacf, initial, measurement,
-                                           5000, data = Ab)
-        if result:
-            ex, ey, ez, et = result
-            tx, ty, tz, tt = map(float, bits[16:20])
-            print '%.4f %.4f %.4f (%.4f %.4f %.4f) %d' % \
-                  (ex, ey, ez,  tx, ty, tz, iters)
 
-        ##chk = levmar.dchkjac(func, jacf, (0.5, 0.5, 0.5, 10.0), 4, Ab)        
-        
-if __name__ == "__main__":
-    main()
+        # if result:
+        #     ex, ey, ez, et = result
+        #     tx, ty, tz, tt = map(float, bits[16:20])
+        #     print '%.4f %.4f %.4f (%.4f %.4f %.4f) %d' % \
+        #           (ex, ey, ez,  tx, ty, tz, iters)
 
+        # ##chk = levmar.dchkjac(func, jacf, (0.5, 0.5, 0.5, 10.0), 4, Ab)
 
             
         

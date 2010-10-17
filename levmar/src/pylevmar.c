@@ -5,62 +5,91 @@
 
 #include "pylevmar.h"
 
+// typedef struct _pylevmar_func_data {
+//     PyObject *ffcn;
+//     PyObject *dffcn;
+//     PyObject *data;
+// } pylevmar_func_data;
+
+
+// void _pylevmar_func(double *p, double *retval, int Np, int Nretval, void *data){
+//     /*
+//     p: parameters, array of size Np, input
+//     retval: measurement model return value, array of size Nretval, output
+//     */
+//     PyObject *func;
+//     PyObject *py_p = NULL;
+//     PyObject *py_retval = NULL;
+//     PyObject *py_args = NULL;
+//     pylevmar_func_data *pydata;
+//     npy_intp dims[1];
+    
+//     printf("called _pylevmar_func\n");
+    
+//     pydata = (pylevmar_func_data *) data;
+//     dims[0] = Np;
+//     py_p = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, p);
+//     dims[0] = Nretval;
+//     py_retval = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, retval);
+//     py_args = Py_BuildValue("(OOO)", py_p, py_retval, pydata->data);
+    
+//     if (PyObject_CallObject(func, py_args)) PyErr_Print();
+    
+//     Py_XDECREF(func);
+//     Py_XDECREF(py_p);
+//     Py_XDECREF(py_args);
+//     Py_XDECREF(py_retval);
+//     return;
+// }
+
+
 typedef struct _pylm_callback_data {
     PyObject *func;
     PyObject *jacf;
     PyObject *data;
 } pylm_callback_data;
 
-void _pylm_callback(PyObject *func, double *p, double *hx, int m, int n, 
+void _pylm_callback(PyObject *func, double *x, double *y, int m, int n, 
                     PyObject *data, int  jacobian) {
-    int i;
+
+    /*
+    
+    def func(x, args):
+        return ...
+    
+    y = func(x)
+    
+    
+    */
     PyObject *result = NULL, *args = NULL;
-    PyObject *estimate = NULL, *measurement = NULL;
+    PyObject *py_x = NULL, *py_y = NULL;
+    npy_intp dims[1];
     
-    // marshall parameters from c -> python
-    estimate = PyTuple_New(m);
-    measurement = PyTuple_New(n);
-    
-    for (i = 0; i < m; i++) {
-        PyTuple_SetItem(estimate, i, PyFloat_FromDouble(p[i]));
-    }
-    for (i = 0; i < n; i++) {
-        PyTuple_SetItem(measurement, i, PyFloat_FromDouble(hx[i]));
-    }
-    
-    args = Py_BuildValue("(OOO)", estimate, measurement, data);
+    dims[0] = m;
+    py_x = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, x);
+    dims[0] = n;
+    py_y = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, y);
+    args = Py_BuildValue("(OO)", py_x, data);
 
     if (!args) {
         goto cleanup;
     }
 
-    // call func
-    
+    /* call func */
     if ((result = PyObject_CallObject(func, args)) == 0) {
         PyErr_Print();
         goto cleanup;
     }
+    
+    /* copy result of the Python function to *y */
+    PyArray_CopyInto(py_y, result);
 
-    // marshall results from python -> c
-    if ((!jacobian && (PySequence_Size(result) == n)) ||
-        (jacobian &&  (PySequence_Size(result) == m*n))) {
-
-        for (i = 0; i < PySequence_Size(result); i++) {
-            PyObject *r = PySequence_GetItem(result, i);
-            hx[i] = PyFloat_AsDouble(r);
-            Py_DECREF(r);
-        }
-    }
-    else {
-        PyErr_SetString(PyExc_TypeError, "Return value from callback "
-                        "should be same size as measurement");
-    }
 
  cleanup:
     
     Py_XDECREF(args);
-    Py_XDECREF(estimate);
-    Py_XDECREF(measurement);
+    Py_XDECREF(py_x);
+    Py_XDECREF(py_y);
     Py_XDECREF(result);
     return;
 }
@@ -85,6 +114,7 @@ void _pylm_jacf_callback(double *p, double *hx, int m, int n, void *data) {
   PyModule_AddObject(mod, name, PyFloat_FromDouble(constant));
 
 void init_levmar() {
+    import_array();
     PyObject *mod = Py_InitModule3("_levmar", pylm_functions, pylm_doc);
     
     PyModule_AddDoubleConstant(mod, "INIT_MU", LM_INIT_MU);
@@ -109,6 +139,7 @@ _pylm_dlevmar_generic(PyObject *mod, PyObject *args, PyObject *kwds,
     PyObject *lower = NULL, *upper = NULL;
     PyObject *opts = NULL, *covar = NULL, *data = NULL;
     PyObject *retval = NULL, *info = NULL;
+    npy_intp dims[1];
 
     pylm_callback_data *pydata = NULL;
     double *c_initial = NULL, *c_measurements = NULL, *c_opts = NULL;
@@ -284,16 +315,12 @@ _pylm_dlevmar_generic(PyObject *mod, PyObject *args, PyObject *kwds,
     }
 
     // convert results back into python
-    if (run_iter > 0) {
-        retval = PyTuple_New(m);
-        for (i = 0; i < m; i++) {
-            PyTuple_SetItem(retval, i, PyFloat_FromDouble(c_initial[i]));
-        }
+    dims[0] = m;
+    retval = PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+    for (i = 0; i < m; i++) {
+        PySequence_SetItem(retval, i, PyFloat_FromDouble(c_initial[i]));
     }
-    else {
-        retval = Py_None;
-        Py_INCREF(Py_None);
-    }
+
 
     // convert additional information into python
     info = Py_BuildValue("{s:d,s:d,s:d,s:d,s:d,s:d,s:d,s:d,s:d}",

@@ -1,3 +1,11 @@
 """PYLEVMAR, Python Bindings to LEVMAR"""
 
-from _levmar import *
+from interface import *
+
+# testing
+from numpy.testing import Tester
+test = Tester().test
+
+
+
+

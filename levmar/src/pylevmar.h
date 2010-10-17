@@ -6,9 +6,12 @@
 #ifndef __PYLEVMAR_H
 #define __PYLEVMAR_H
 
+#define PY_ARRAY_UNIQUE_SYMBOL PyArrayHandle
+
 #include "lm.h"
 
 #include <Python.h>
+#include <numpy/noprefix.h>
 #include "structmember.h"
 
 #ifndef Py_RETURN_NONE
