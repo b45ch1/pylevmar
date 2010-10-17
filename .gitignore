@@ -1,0 +1,13 @@
+.*
+*.*~
+*.py~
+*.pyc
+*.o
+*.os
+*.so
+*~
+*.log
+build
+
+# exceptions
+!.gitignore

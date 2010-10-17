@@ -84,8 +84,8 @@ void _pylm_jacf_callback(double *p, double *hx, int m, int n, void *data) {
 #define PyModule_AddDoubleConstant(mod, name, constant) \
   PyModule_AddObject(mod, name, PyFloat_FromDouble(constant));
 
-void initlevmar() {
-    PyObject *mod = Py_InitModule3("levmar", pylm_functions, pylm_doc);
+void init_levmar() {
+    PyObject *mod = Py_InitModule3("_levmar", pylm_functions, pylm_doc);
     
     PyModule_AddDoubleConstant(mod, "INIT_MU", LM_INIT_MU);
     PyModule_AddDoubleConstant(mod, "STOP_THRESHU", LM_STOP_THRESH);
