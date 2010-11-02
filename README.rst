@@ -27,23 +27,17 @@ Licence:
 
 
 
-Original README.txt of LEVMAR:
-------------------------------
-    
-    
-    
-    **************************************************************
-                                LEVMAR
-                              version 2.5
-                          By Manolis Lourakis
+Original README of LEVMAR::
+-------------------------------
 
-                     Institute of Computer Science
-            Foundation for Research and Technology - Hellas
-                       Heraklion, Crete, Greece
-    **************************************************************
+LEVMAR
+version 2.5
+By Manolis Lourakis
 
+Institute of Computer Science
+Foundation for Research and Technology - Hellas
+Heraklion, Crete, Greece
 
-GENERAL
 This is levmar, a copylefted C/C++ implementation of the Levenberg-Marquardt non-linear
 least squares algorithm. levmar includes double and single precision LM versions, both
 with analytic and finite difference approximated Jacobians. levmar also has some support
@@ -100,10 +94,15 @@ MATLAB INTERFACE
 Since version 2.2, the levmar distribution includes a matlab interface.
 See the 'matlab' subdirectory for more information and examples of use.
 
-Notice that *_core.c files are not to be compiled directly; For example,
+Notice that `*_core.c` files are not to be compiled directly; For example,
 Axb_core.c is included by Axb.c, to provide single and double precision
 routine versions.
 
 
 Send your comments/bug reports to lourakis at ics forth gr
 
+    
+
+    
+    
+    
