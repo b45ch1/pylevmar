@@ -1,5 +1,10 @@
-Python Bindings to LEVMAR
--------------------------
+====================================
+PYLEVMAR - Python Bindings to LEVMAR
+====================================
+
+
+WARNING: this project is currently not usable and in early alpha stage
+
 
 This project combines 
 
@@ -15,6 +20,9 @@ for ease of installation.
 
 Licence:
     GPL (see the included LICENSE file)
+    
+    
+    
     
 
 
